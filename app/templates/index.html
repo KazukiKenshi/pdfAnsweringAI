@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Question Answering Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .pdf-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .pdf-viewer {
+            width: 70%;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+
+        .pdf-text {
+            width: 100%;
+            margin: 20px auto;
+            background-color: #f4f4f4;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            white-space: pre-wrap;
+        }
+
+        .qa-form {
+            width: 30%;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+
+        .qa-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .qa-form textarea {
+            width: calc(100% - 20px);
+            height: 80px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            resize: none;
+        }
+
+        .qa-form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .qa-form button:hover {
+            background-color: #0056b3;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .file-label:hover {
+            background-color: #0056b3;
+        }
+
+        .highlight {
+            background-color: #FFFFCC;
+            padding: 3px;
+        }
+
+        .answer-highlight {
+            background-color: #FFFFCC;
+            padding: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pdf-container">
+        <div class="pdf-viewer">
+            <div class="pdf-text" id="pdfText"></div>
+        </div>
+        <div class="qa-form">
+            <label for="pdfInput" class="file-label" id="fileLabel">Choose PDF</label>
+            <input type="file" id="pdfInput" class="file-input" accept=".pdf">
+            <form id="qaForm">
+                <label for="question">Question:</label>
+                <textarea id="question" name="question" required></textarea>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="answer"></div>
+        </div>
+    </div>
+
+    <script>
+        function displayText(text) {
+            const pdfTextContainer = document.getElementById('pdfText');
+            pdfTextContainer.textContent = text;
+        }
+
+        function highlightAnswer(startIndex, endIndex) {
+            const pdfTextContainer = document.getElementById('pdfText');
+            const textNodes = getTextNodeAndOffset(pdfTextContainer, startIndex, endIndex);
+
+            const existingHighlights = pdfTextContainer.querySelectorAll('.answer-highlight');
+            existingHighlights.forEach(node => node.classList.remove('answer-highlight'));
+
+            textNodes.forEach(node => {
+                const range = document.createRange();
+                range.setStart(node.node, node.startOffset);
+                range.setEnd(node.node, node.endOffset);
+                const span = document.createElement('span');
+                span.className = 'answer-highlight';
+                range.surroundContents(span);
+            });
+        }
+
+        function getTextNodeAndOffset(container, startIndex, endIndex) {
+            const textNodes = [];
+            let charCount = 0;
+
+            function getTextNodes(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const length = node.textContent.length;
+                    const start = Math.max(0, startIndex - charCount);
+                    const end = Math.min(length, endIndex - charCount);
+
+                    if (end > start) {
+                        textNodes.push({
+                            node: node,
+                            startOffset: start,
+                            endOffset: end
+                        });
+                    }
+                    charCount += length;
+                } else {
+                    for (const childNode of node.childNodes) {
+                        getTextNodes(childNode);
+                    }
+                }
+            }
+
+            getTextNodes(container);
+            return textNodes;
+        }
+
+        document.getElementById('pdfInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        displayText(data.text);
+                        document.getElementById('fileLabel').textContent = file.name;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        document.getElementById('qaForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append('question', document.getElementById('question').value);
+            formData.append('text', document.getElementById('pdfText').textContent);
+
+            fetch('/qa', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        highlightAnswer(data.start_index, data.end_index);
+                        document.getElementById('answer').innerHTML = `<p>Answer: <strong>${data.answer}</strong></p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+</body>
+
+</html>
