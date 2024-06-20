@@ -39,5 +39,5 @@ There are 2 Jupyter notebooks provided in this repository:
 
 ### Google Colab for Training
 
-The BERT model was trained using a Google Colab notebook. You can find the notebook used for training [here](link-to-your-google-colab-notebook).
+The BERT model was trained using a Google Colab notebook. You can find the notebook used for training [here](https://colab.research.google.com/drive/11DzyIWDAbM7aBH5pCsyo1OBVtEcb0KGV?usp=sharing).
 
