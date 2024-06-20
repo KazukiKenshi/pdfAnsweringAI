@@ -23,3 +23,21 @@ This project utilizes a fine-tuned BERT model to answer questions based on conte
 
    This command will start the application, allowing you to interact with the PDF reader and the BERT-based question answering functionality.
 
+## Usage
+
+### Jupyter Notebooks
+
+There are 2 Jupyter notebooks provided in this repository:
+
+1. **Training Code Notebook:**
+   - Contains the code used to train the BERT model.
+   - Located in the `training_code.ipynb` file.
+
+2. **Model Usage Notebook:**
+   - Demonstrates how to use the trained model for question answering.
+   - Located in the `model_usage.ipynb` file.
+
+### Google Colab for Training
+
+The BERT model was trained using a Google Colab notebook. You can find the notebook used for training [here](link-to-your-google-colab-notebook).
+
